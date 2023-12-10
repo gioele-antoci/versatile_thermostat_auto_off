@@ -1,6 +1,6 @@
 {
   "domain": "versatile_thermostat",
-  "name": "Versatile Thermostat",
+  "name": "Versatile Thermostat Auto Off",
   "codeowners": [
     "@jmcollin78"
   ],
