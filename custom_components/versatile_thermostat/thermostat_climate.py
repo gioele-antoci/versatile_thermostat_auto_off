@@ -14,6 +14,7 @@ from homeassistant.components.climate import HVACAction, HVACMode, ClimateEntity
 from .commons import NowClass, round_to_nearest
 from .base_thermostat import BaseThermostat
 from .pi_algorithm import PITemperatureRegulator
+from typing import Dict
 
 from .const import (
     overrides,
@@ -64,7 +65,8 @@ class ThermostatOverClimate(BaseThermostat):
     _auto_fan_mode: str = None
     _auto_activated_fan_mode: str = None
     _auto_deactivated_fan_mode: str = None
-
+    _activated_invalid_temperature_fallback: bool = False
+    _invalid_temp_saved: bool = False
     _entity_component_unrecorded_attributes = (
         BaseThermostat._entity_component_unrecorded_attributes.union(
             frozenset(
@@ -174,7 +176,20 @@ class ThermostatOverClimate(BaseThermostat):
             new_regulated_temp,
         )
 
+        if self._invalid_temp_saved:
+            await self.restore_hvac_mode(True)
+
         for under in self._underlyings:
+            # switch to fan mode if the temperature is outside the range of the underlying climate
+            if (
+                self.regulated_target_temp > self._attr_max_temp
+                or self.regulated_target_temp < self.att_attr_min_temp
+            ):
+                self._invalid_temp_saved = True
+                self.save_hvac_mode()
+                await self.async_set_hvac_mode(HVACMode.FAN_ONLY)
+                return
+
             await under.set_temperature(
                 self.regulated_target_temp, self._attr_max_temp, self._attr_min_temp
             )
