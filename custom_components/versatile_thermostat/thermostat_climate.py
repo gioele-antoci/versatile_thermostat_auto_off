@@ -177,6 +177,7 @@ class ThermostatOverClimate(BaseThermostat):
         )
 
         if self._invalid_temp_saved:
+            _LOGGER.info("Restoring hvac mode after previous invalid temperature", self)
             await self.restore_hvac_mode(True)
 
         for under in self._underlyings:
@@ -185,6 +186,11 @@ class ThermostatOverClimate(BaseThermostat):
                 self.regulated_target_temp > self._attr_max_temp
                 or self.regulated_target_temp < self.att_attr_min_temp
             ):
+                _LOGGER.info(
+                    "%s - Regulated temp: %.1f is invalid. Changing to fan mode",
+                    self,
+                    new_regulated_temp,
+                )
                 self._invalid_temp_saved = True
                 self.save_hvac_mode()
                 await self.async_set_hvac_mode(HVACMode.FAN_ONLY)
